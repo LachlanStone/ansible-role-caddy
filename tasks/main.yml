@@ -1,0 +1,17 @@
+- name: Import Install Caddy Tasks
+  ansible.builtin.import_tasks: install_caddy.yml
+  tags: install
+  when: ansible_os_family in ["Fedora", "Rocky", "RedHat"] and (caddy_install_mode == "custom" or caddy_install_mode == "pkg")
+
+- name: Import Configure CloudFlare Tasks
+  ansible.builtin.import_tasks: configure_cloudflare.yml
+  when: cloudflare_dns | bool
+  tags:
+    - install
+    - cloudflare
+
+- name: Import Configure Caddy Tasks
+  ansible.builtin.import_tasks: configure_caddy.yml
+  tags:
+    - install
+    - configure

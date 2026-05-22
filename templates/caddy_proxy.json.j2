@@ -1,0 +1,14 @@
+# ==============================================================================
+# INTERNAL ROUTE: Standard connection from your local network
+# ==============================================================================
+
+{% for server in caddy_dns_servers %}
+{{ server.fqdn }}:443 {
+    # Strictly restrict to internal LAN
+{% for config in server.imported_configs %}
+    import {{ config }}
+{% endfor %}
+    reverse_proxy {{ server.protocol | default('http') }}://{{ server.upstream }}
+}
+
+{% endfor %}

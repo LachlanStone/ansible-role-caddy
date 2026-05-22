@@ -1,0 +1,100 @@
+{# Managed by Ansible – do not edit manually #}
+{
+{% if caddy_global.email is defined %}
+  email {{ caddy_global.email }}
+{% endif %}
+{% if caddy_global.debug | default(false) %}
+  debug
+{% endif %}
+{% if caddy_global.persist_config is defined %}
+  persist_config {{ caddy_global.persist_config }}
+{% endif %}
+{% if caddy_global.admin is defined %}
+  admin {{ caddy_global.admin }}
+{% endif %}
+{% if caddy_global.metrics | default(false) %}
+  metrics
+{% endif %}
+{% if caddy_global.acme_dns is defined %}
+  acme_dns {{ caddy_global.acme_dns.provider }} {env.{{ caddy_global.acme_dns.token_env }}}
+{% endif %}
+{% if caddy_global.key_type is defined %}
+  key_type {{ caddy_global.key_type }}
+{% endif %}
+{% if caddy_global.ocsp_stapling is defined %}
+  ocsp_stapling {{ caddy_global.ocsp_stapling }}
+{% endif %}
+{% if caddy_global.grace_period is defined %}
+  grace_period {{ caddy_global.grace_period }}
+{% endif %}
+{% if caddy_global.shutdown_delay is defined %}
+  shutdown_delay {{ caddy_global.shutdown_delay }}
+{% endif %}
+{% if caddy_global.servers is defined %}
+  # Trust proxy IPs to preserve real client IP
+  servers {
+{% if caddy_global.servers.trusted_proxy_networks | default([]) | length > 0 %}
+    trusted_proxies static {
+{% for network in caddy_global.servers.trusted_proxy_networks %}
+      {{ network }}
+{% endfor %}
+    }
+{% endif %}
+{% if caddy_global.servers.trusted_proxies_strict | default(false) %}
+    # Parse X-Forwarded-For right-to-left to prevent IP spoofing
+    trusted_proxies_strict
+{% endif %}
+{% if caddy_global.servers.disable_0rtt | default(false) %}
+    # Disable QUIC 0-RTT early data — remote_ip matchers require a fully
+    # established connection before the TLS handshake completes
+    0rtt off
+{% endif %}
+{% if caddy_global.servers.timeouts is defined %}
+    timeouts {
+{% if caddy_global.servers.timeouts.read_body is defined %}
+      read_body {{ caddy_global.servers.timeouts.read_body }}
+{% endif %}
+{% if caddy_global.servers.timeouts.read_header is defined %}
+      read_header {{ caddy_global.servers.timeouts.read_header }}
+{% endif %}
+{% if caddy_global.servers.timeouts.write is defined %}
+      write {{ caddy_global.servers.timeouts.write }}
+{% endif %}
+{% if caddy_global.servers.timeouts.idle is defined %}
+      idle {{ caddy_global.servers.timeouts.idle }}
+{% endif %}
+    }
+{% endif %}
+{% if caddy_global.servers.max_header_size is defined %}
+    max_header_size {{ caddy_global.servers.max_header_size }}
+{% endif %}
+{% if caddy_global.servers.protocols | default([]) | length > 0 %}
+    protocols {{ caddy_global.servers.protocols | join(' ') }}
+{% endif %}
+  }
+{% endif %}
+}
+
+import policy.d/*.caddyfile
+
+{% for domain in caddy_tls_domains | default([]) %}
+{{ domain.name }} {
+{% if domain.comment is defined %}
+  # {{ domain.comment }}
+{% endif %}
+{% if domain.tls is defined %}
+  tls {{ domain.tls.cert }} {{ domain.tls.key }}
+{% endif %}
+}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+
+import conf.d/*.caddyfile
+
+# Catch-all for traffic that doesn't match a defined domain
+:80, :443 {
+  abort
+}
+

@@ -1,0 +1,20 @@
+---
+name: Publish to Ansible Galaxy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish role to Ansible Galaxy
+        uses: ansible/galaxy-importer-github-action@v1
+        with:
+          galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}

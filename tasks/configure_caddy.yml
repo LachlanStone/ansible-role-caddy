@@ -1,0 +1,72 @@
+- name: Deploy Caddyfile configuration
+  ansible.builtin.template:
+    src: "templates/caddy_common.caddyfile.j2"
+    dest: /etc/caddy/Caddyfile
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload caddy
+
+- name: Ensure conf.d directory exists
+  ansible.builtin.file:
+    path: /etc/caddy/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure policy.d directory exists
+  ansible.builtin.file:
+    path: /etc/caddy/policy.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Configure Caddy files
+  notify: reload caddy
+  block:
+    - name: Deploy common Caddy policy snippets from template
+      ansible.builtin.template:
+        src: "templates/caddy_common_snippet.caddyfile.j2"
+        dest: "/etc/caddy/policy.d/{{ item.file | default(item.name) }}.caddyfile"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ caddy_common_snippets }}"
+      loop_control:
+        label: "{{ item.file | default(item.name) }}.caddyfile"
+
+    - name: Deploy Caddy logging policy snippets from template
+      ansible.builtin.template:
+        src: "templates/caddy_logging.caddyfile.j2"
+        dest: "/etc/caddy/policy.d/{{ item.file | default(item.name) }}.caddyfile"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ caddy_logs }}"
+      loop_control:
+        label: "{{ item.file | default(item.name) }}.caddyfile"
+      when: caddy_logs | length > 0
+
+    - name: Deploy Caddy remote IP policy snippets from template
+      ansible.builtin.template:
+        src: "templates/caddy_remote_ip.caddyfile.j2"
+        dest: "/etc/caddy/policy.d/{{ item.file | default(item.name) }}.caddyfile"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ caddy_remote_ip }}"
+      loop_control:
+        label: "{{ item.file | default(item.name) }}.caddyfile"
+
+    - name: Deploy Caddy server block configs from template
+      ansible.builtin.template:
+        src: "templates/caddy_server_block.caddyfile.j2"
+        dest: "/etc/caddy/conf.d/{{ item.file | default(item.name) }}.caddyfile"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ caddy_proxy_servers }}"
+      loop_control:
+        label: "{{ item.file | default(item.name) }}.caddyfile"

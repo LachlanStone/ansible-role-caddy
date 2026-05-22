@@ -1,0 +1,13 @@
+{# Managed by Ansible – do not edit manually #}
+({{ item.name }}) {
+{% if item.encode | default([]) | length > 0 %}
+  encode {{ item.encode | join(' ') }}
+{% endif %}
+{% if item.header_directives | default([]) | length > 0 %}
+  header {
+{% for directive in item.header_directives %}
+    {{ directive }}
+{% endfor %}
+  }
+{% endif %}
+}

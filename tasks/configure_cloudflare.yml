@@ -1,0 +1,29 @@
+- name: Download Cloudflare Authenticated Origin Pull CA 
+  ansible.builtin.get_url:
+    url: "https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem"
+    # Map this directly to the path we specified in the Caddyfile
+    dest: /etc/caddy/cloudflare.crt 
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create secure environment file for Cloudflare Token
+  ansible.builtin.copy:
+    dest: /etc/caddy/cloudflare.env
+    owner: root
+    group: root
+    mode: '0600'
+    content: |
+      CLOUDFLARE_API_TOKEN={{ vault_cloudflare_acme_api_token }}
+  register: caddy_env_file
+
+- name: Configure systemd to use the Caddy environment file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/caddy.service.d/cloudflare-env.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Service]
+      EnvironmentFile=/etc/caddy/cloudflare.env
+  register: caddy_systemd_override

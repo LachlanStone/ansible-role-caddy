@@ -1,0 +1,35 @@
+{# Managed by Ansible – do not edit manually #}
+{% for server in item.servers %}
+{% for route in server.routes %}
+# ==============================================================================
+{% for line in route.comment %}
+# {{ line }}
+{% endfor %}
+# ==============================================================================
+
+{{ server.fqdn }}:{{ route.port | default(443) }} {
+{% if route.note is defined %}
+  # {{ route.note }}
+{% endif %}
+{% for cfg in route.imports %}
+  import {{ cfg }}
+{% endfor %}
+{% if server.upstream_headers | default([]) | length > 0 %}
+  reverse_proxy http://{{ server.upstream }}{% if server.upstream_port is defined %}:{{ server.upstream_port }}{% endif %} {
+{% for header in server.upstream_headers %}
+    header_up {{ header.name }} {{ header.value }}
+{% endfor %}
+  }
+{% else %}
+  reverse_proxy http://{{ server.upstream }}{% if server.upstream_port is defined %}:{{ server.upstream_port }}{% endif %}
+{% endif %}
+
+}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}
+{% if not loop.last %}
+
+{% endif %}
+{% endfor %}

@@ -1,0 +1,94 @@
+caddy_install_mode: pkg  # Options: pkg, custom
+cloudflare_dns: false
+caddy_proxy_servers: []
+
+caddy_custom_binary_src: ""  # Required when caddy_install_mode == "custom"; absolute path to pre-built Caddy binary on the control node
+
+caddy_force_reload: true
+caddy_log_dir: /var/log/caddy
+caddy_logs: []
+
+caddy_global:
+  email: ""  # ACME registration email; required for certificate issuance
+  debug: false
+  persist_config: "off"
+  admin: "localhost:2019"
+  metrics: true
+  acme_dns:
+    provider: cloudflare
+    token_env: CF_API_TOKEN
+  key_type: ed25519
+  # Disabled — Cloudflare terminates TLS before traffic reaches Caddy (Full/Full Strict mode)
+  # Set to 'on' if Caddy is directly internet-facing
+  ocsp_stapling: "off"
+  grace_period: 10s
+  shutdown_delay: 5s
+  servers:
+    trusted_proxy_networks: "{{ caddy_cloudflare_networks + caddy_localhost_networks }}"
+    trusted_proxies_strict: true
+    disable_0rtt: true
+    timeouts:
+      read_body: 10s
+      read_header: 10s
+      write: 30s
+      idle: 2m
+    max_header_size: 32KiB
+    protocols:
+      - h1
+      - h2
+      - h3
+
+caddy_tls_domains: []
+  # Example:
+  # - name: "*.example.com"
+  #   comment: "Wildcard certificate — DNS-01 challenge via global acme_dns"
+
+caddy_common_snippet_name: common_config
+caddy_common_encode:
+  - zstd
+  - gzip
+caddy_common_header_directives:
+  - 'Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"'
+  - 'X-Content-Type-Options "nosniff"'
+  - 'X-Frame-Options "SAMEORIGIN"'
+  - 'Referrer-Policy "strict-origin-when-cross-origin"'
+  - 'X-XSS-Protection "1; mode=block"'
+  - 'Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"'
+  - 'X-Robots-Tag "noindex, nofollow"'
+  - 'X-Real-Ip {client_ip}'
+  - '-Accept-Encoding'
+  - '-Server'
+  - '-X-Powered-By'
+
+caddy_common_snippets:
+  - name: "{{ caddy_common_snippet_name }}"
+    file: common
+    encode: "{{ caddy_common_encode }}"
+    header_directives: "{{ caddy_common_header_directives }}"
+
+caddy_cloudflare_networks:
+  - 173.245.48.0/20
+  - 103.21.244.0/22
+  - 103.22.200.0/22
+  - 103.31.4.0/22
+  - 141.101.64.0/18
+  - 108.162.192.0/18
+  - 190.93.240.0/20
+  - 188.114.96.0/20
+  - 197.234.240.0/22
+  - 198.41.128.0/17
+  - 162.158.0.0/15
+  - 104.16.0.0/13
+  - 104.24.0.0/14
+  - 172.64.0.0/13
+  - 131.0.72.0/22
+
+caddy_localhost_networks:
+  - 127.0.0.1
+
+caddy_remote_ip:
+  - name: cloudflare_only
+    remote_ip:
+      - name: cloudflare_only
+        networks: "{{ caddy_cloudflare_networks + caddy_localhost_networks }}"
+

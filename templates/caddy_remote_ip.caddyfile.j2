@@ -1,0 +1,7 @@
+{# Managed by Ansible – do not edit manually #}
+{% for remote_ip in item.remote_ip %}
+({{ remote_ip.name }}) {
+  @blocked not remote_ip {{ remote_ip.networks | join(' ') }}
+  abort @blocked
+}
+{% endfor %}

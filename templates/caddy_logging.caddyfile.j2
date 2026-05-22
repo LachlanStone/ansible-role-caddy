@@ -1,0 +1,11 @@
+{% for log in item.log %}
+({{ log.name }}) {
+  log {
+    output file {{ caddy_log_dir }}/{{ log.name }}.log {
+      roll_size {{ log.roll_size }}
+      roll_keep {{ log.roll_keep }}
+    }
+    format {{ log.format }}
+  }
+}
+{% endfor %}

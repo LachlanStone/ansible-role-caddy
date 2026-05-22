@@ -1,0 +1,98 @@
+- name: Install Caddy Web Server with Package mode
+  when: caddy_install_mode == "pkg"
+  block:
+    - name: Install Caddy DNF Based OS
+      when: ansible_os_family == "Fedora" or ansible_os_family == "Rocky" or ansible_os_family == "RedHat"
+      block:
+        - name: Install Caddy Web Server
+          ansible.builtin.dnf:
+            name: dnf5-plugins
+            state: present
+          when: ansible_os_family == "Fedora"
+
+        - name: Install Caddy Web Server
+          ansible.builtin.dnf:
+            name: dnf-plugins-core
+            state: present
+          when: ansible_os_family == "Rocky" or ansible_os_family == "RedHat"
+
+        - name: Enable project Test of the user schlupov
+          community.general.copr:
+            host: copr.fedorainfracloud.org
+            state: enabled
+            name: "@caddy/caddy"
+            chroot: epel-10-x86_64
+
+        - name: Install Caddy Web Server
+          ansible.builtin.dnf:
+            name: caddy
+            state: present
+
+    - name: Check if CloudFlare DNS Plugin is already installed
+      ansible.builtin.command:
+        cmd: caddy list-modules
+      register: caddy_modules
+      changed_when: false
+
+    - name: Install Caddy CloudFlare DNS Plugin
+      ansible.builtin.command:
+        cmd: caddy add-package github.com/caddy-dns/cloudflare
+      when: "'dns.providers.cloudflare' not in caddy_modules.stdout"
+
+- name: Install Caddy Web Server with Custom Binary mode
+  when: caddy_install_mode == "custom"
+  block:
+    - name: Create Caddy Group
+      ansible.builtin.group:
+        name: caddy
+        system: yes
+
+    - name: Ensure Caddy user exists
+      ansible.builtin.user:
+        name: caddy
+        group: caddy
+        createhome: true
+        system: yes
+        shell: /usr/sbin/nologin
+   
+    - name: Create conf.d directory for modular Caddy configuration
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - /etc/caddy
+        - /etc/caddy/conf.d
+        - /etc/systemd/system/caddy.service.d
+
+    - name: Create log directory for Caddy
+      ansible.builtin.file:
+        path: /var/log/caddy
+        state: directory
+        owner: caddy
+        group: caddy
+        mode: '0777'
+
+    - name: Copy custom Caddy binary to target
+      ansible.builtin.copy:
+        # Set caddy_custom_binary_src to the absolute path of a pre-built Caddy binary on the control node
+        src: "{{ caddy_custom_binary_src }}"
+        dest: /usr/bin/caddy
+        owner: root
+        group: root
+        mode: '0755'
+        backup: yes
+
+    - name: Create systemd override directory for Caddy
+      ansible.builtin.copy:
+        src: files/caddy.service
+        dest: /etc/systemd/system/caddy.service
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: yes

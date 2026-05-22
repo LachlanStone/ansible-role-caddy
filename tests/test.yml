@@ -1,0 +1,19 @@
+---
+- name: Test deploy_caddy role
+  hosts: localhost
+  connection: local
+  become: true
+
+  vars:
+    caddy_install_mode: pkg
+    cloudflare_dns: false
+    caddy_global:
+      email: "admin@example.com"
+      debug: false
+      persist_config: "off"
+      admin: "localhost:2019"
+    caddy_tls_domains: []
+    caddy_proxy_servers: []
+
+  roles:
+    - role: deploy_caddy

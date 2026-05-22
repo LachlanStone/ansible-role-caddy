@@ -1,0 +1,2 @@
+---
+# Role-internal constants. Override in defaults/ or via playbook vars, not here.
